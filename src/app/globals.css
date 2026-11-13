@@ -1,0 +1,177 @@
+/*
+ * Global styles. Most styling is Tailwind classes in the components; this
+ * file holds the colour tokens, the
+ * Tailwind theme and a few reusable classes.
+ */
+@import "tailwindcss";
+
+/* Dark mode (default): deep ink with a mint-to-cyan glow. */
+:root {
+  color-scheme: dark;
+  --bg: #05080d;
+  --surface: rgb(255 255 255 / 0.04);
+  --surface-strong: rgb(255 255 255 / 0.08);
+  --text: #eef3f6;
+  --muted: #8d9aa8;
+  --border: rgb(255 255 255 / 0.1);
+  --accent: #34e3a0;
+  --accent-2: #22d3ee;
+  --accent-3: #3b82f6;
+  --accent-soft: rgb(52 227 160 / 0.12);
+  --danger: #f87171;
+  --card-from: rgb(255 255 255 / 0.06);
+  --card-to: rgb(255 255 255 / 0.02);
+  --shadow: rgb(0 0 0 / 0.6);
+  --glow: 0.16;
+}
+
+/* Light mode, following the visitor's system setting. */
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --bg: #f4f8f7;
+    --surface: rgb(255 255 255 / 0.7);
+    --surface-strong: rgb(255 255 255 / 0.95);
+    --text: #0c1622;
+    --muted: #566272;
+    --border: rgb(12 22 34 / 0.11);
+    --accent: #067352;
+    --accent-2: #0e7490;
+    --accent-3: #1d4ed8;
+    --accent-soft: rgb(6 115 82 / 0.1);
+    --danger: #b91c1c;
+    --card-from: rgb(255 255 255 / 0.95);
+    --card-to: rgb(255 255 255 / 0.7);
+    --shadow: rgb(12 22 34 / 0.12);
+    --glow: 0.22;
+  }
+}
+
+/* Each --color-x gives Tailwind classes such as bg-x, text-x and border-x. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-grotesk), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --animate-rise: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+html {
+  overflow-x: clip;
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+/* Large desktops and TVs: scale the rem-based layout up so it fills the screen. */
+@media (min-width: 1920px) { html { font-size: 112.5%; } }
+@media (min-width: 2560px) { html { font-size: 137.5%; } }
+@media (min-width: 3400px) { html { font-size: 187.5%; } }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  /* No grey flash when tapping on phones; the app-style controls show their own pressed state. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection { background: color-mix(in srgb, var(--accent) 30%, transparent); }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 0.75rem;
+}
+
+/* Soft glow behind the page (the <div class="aurora"> in layout.tsx). */
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: calc(var(--glow) * 6);
+  background:
+    radial-gradient(40rem 26rem at 10% -5%, color-mix(in srgb, var(--accent) 15%, transparent), transparent 70%),
+    radial-gradient(36rem 24rem at 95% 0%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 70%);
+}
+
+.text-gradient {
+  background: linear-gradient(100deg, var(--accent), var(--accent-2), var(--accent-3));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@layer components {
+  .card {
+    border-radius: 1.5rem;
+    background: linear-gradient(180deg, var(--card-from), var(--card-to));
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 40px -24px var(--shadow);
+  }
+  .btn-primary {
+    background: linear-gradient(100deg, #34e3a0, #22d3ee);
+    color: #04120d;
+    box-shadow: 0 10px 40px -14px rgb(52 227 160 / 0.6);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  }
+  .btn-primary:hover { box-shadow: 0 14px 44px -10px rgb(34 211 238 / 0.65); }
+  .btn-primary:disabled { opacity: 0.5; box-shadow: none; cursor: not-allowed; }
+  .btn-ghost {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    transition: border-color 0.2s ease, transform 0.15s ease, background-color 0.2s ease;
+  }
+  .btn-ghost:hover { border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+  .btn-primary:active:not(:disabled),
+  .btn-ghost:active:not(:disabled) { transform: scale(0.97); }
+
+  /* Segmented control (Page size, Orientation, Margins), like a native app's picker. */
+  .segment {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border-radius: 0.9rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+  .segment button {
+    flex: 1;
+    min-height: 2.5rem;
+    padding: 0 0.6rem;
+    border-radius: 0.65rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  .segment button[aria-pressed="true"],
+  .segment button[aria-selected="true"] {
+    background: var(--accent-soft);
+    color: var(--accent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+}
+
+/* FAQ accordion: rotate the chevron when an answer is open. */
+details[open] > summary .chev { transform: rotate(180deg); }
+summary::-webkit-details-marker { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
