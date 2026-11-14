@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Icon } from "@/components/Icon";
 import { friendlyPdfError } from "@/lib/pdf/errors";
-import { formatBytes, isPdf, outputName, percentChange } from "@/lib/pdf/format";
+import { formatBytes, onlyPdfs, outputName, percentChange } from "@/lib/pdf/format";
 import { DEFAULT_PRESET, PRESETS, type CompressionPreset } from "@/lib/pdf/presets";
 import { Dropzone } from "./Dropzone";
 import { Progress } from "./Progress";
@@ -17,13 +17,20 @@ interface Result {
   preset: CompressionPreset["id"];
 }
 
-/** Compress mode: one PDF, a compression level, a progress bar and the before/after result. */
+/**
+ * Compress mode: one PDF, a compression level, a progress bar and the
+ * before/after result. A password-protected PDF asks for its password and
+ * is compressed into an unlocked copy.
+ */
 export function CompressPanel() {
   const [file, setFile] = useState<File | null>(null);
   const [presetId, setPresetId] = useState<CompressionPreset["id"]>(DEFAULT_PRESET);
   const [progress, setProgress] = useState<{ page: number; total: number } | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Set when the PDF turned out to be password-protected (`wrong` after a wrong attempt). */
+  const [locked, setLocked] = useState<{ wrong: boolean } | null>(null);
+  const [password, setPassword] = useState("");
 
   const clearResult = () =>
     setResult((old) => {
@@ -31,11 +38,13 @@ export function CompressPanel() {
       return null;
     });
 
-  const pick = (files: File[]) => {
-    const pdf = files.find(isPdf);
+  const pick = async (files: File[]) => {
+    const [pdf] = await onlyPdfs(files);
     if (!pdf) return setError("Please choose a PDF file (.pdf).");
     clearResult();
     setError(null);
+    setLocked(null);
+    setPassword("");
     setFile(pdf);
   };
 
@@ -47,9 +56,15 @@ export function CompressPanel() {
     setProgress({ page: 0, total: 0 });
     try {
       // Loaded only now: PDF.js and pdf-lib are big and most visitors arrive just to read.
-      const { compressPdf } = await import("@/lib/pdf/compress");
-      const out = await compressPdf(file, preset, (page, total) => setProgress({ page, total }));
-      setResult({ url: URL.createObjectURL(out.blob), size: out.blob.size, pages: out.pages, alreadySmall: out.alreadySmall, preset: preset.id });
+      const [{ compressPdf }, { PdfPasswordError }] = await Promise.all([import("@/lib/pdf/compress"), import("@/lib/pdf/pdfjs")]);
+      try {
+        const out = await compressPdf(file, preset, (page, total) => setProgress({ page, total }), locked ? password : undefined);
+        setResult({ url: URL.createObjectURL(out.blob), size: out.blob.size, pages: out.pages, alreadySmall: out.alreadySmall, preset: preset.id });
+      } catch (e) {
+        if (!(e instanceof PdfPasswordError)) throw e;
+        // Ask for the password (again, if it was wrong) instead of showing an error.
+        setLocked({ wrong: e.wrong });
+      }
     } catch (e) {
       console.error(e);
       setError(friendlyPdfError(e, file.name));
@@ -72,7 +87,7 @@ export function CompressPanel() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-3 sm:p-4">
         <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
-          <Icon name="file" />
+          <Icon name={locked ? "lock" : "file"} />
         </span>
         <p className="min-w-0 flex-1">
           <span className="block truncate font-semibold">{file.name}</span>
@@ -83,6 +98,8 @@ export function CompressPanel() {
           disabled={busy}
           onClick={() => {
             clearResult();
+            setLocked(null);
+            setPassword("");
             setFile(null);
           }}
           className="btn-ghost h-10 rounded-xl px-3.5 text-sm font-semibold disabled:opacity-50"
@@ -90,6 +107,27 @@ export function CompressPanel() {
           Change file
         </button>
       </div>
+
+      {locked && (
+        <label className="block rounded-2xl border border-border bg-surface p-4">
+          <span className="block text-sm font-semibold">This PDF is password-protected</span>
+          <span className="mt-0.5 block text-sm text-muted">Type its password to compress it. The compressed copy won&rsquo;t need a password. Nothing leaves your device.</span>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && password && compress()}
+            disabled={busy}
+            autoFocus
+            autoComplete="off"
+            placeholder="PDF password"
+            aria-label="PDF password"
+            aria-invalid={locked.wrong}
+            className={`mt-3 h-12 w-full rounded-xl border bg-surface-strong px-3 text-base font-semibold outline-none focus:border-accent ${locked.wrong ? "border-danger" : "border-border"}`}
+          />
+          {locked.wrong && <span className="mt-1 block text-sm text-danger">That password isn&rsquo;t right. Please try again.</span>}
+        </label>
+      )}
 
       <fieldset disabled={busy}>
         <legend className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">Compression level</legend>
@@ -122,8 +160,13 @@ export function CompressPanel() {
           total={progress.total}
         />
       ) : (
-        <button type="button" onClick={compress} className="btn-primary flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-semibold">
-          Compress PDF
+        <button
+          type="button"
+          onClick={compress}
+          disabled={!!locked && !password}
+          className="btn-primary flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-semibold"
+        >
+          {locked ? "Unlock & Compress PDF" : "Compress PDF"}
           <Icon name="right" />
         </button>
       )}

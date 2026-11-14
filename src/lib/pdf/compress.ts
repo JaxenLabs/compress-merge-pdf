@@ -31,10 +31,11 @@ function toJpeg(canvas: HTMLCanvasElement, quality: number): Promise<Uint8Array>
   );
 }
 
-export async function compressPdf(file: Blob, preset: CompressionPreset, onProgress: (page: number, total: number) => void): Promise<CompressResult> {
+/** `password` opens a password-protected PDF (the compressed copy has no password). */
+export async function compressPdf(file: Blob, preset: CompressionPreset, onProgress: (page: number, total: number) => void, password?: string): Promise<CompressResult> {
   const original = new Uint8Array(await file.arrayBuffer());
   // PDF.js takes ownership of the bytes it is given, so it gets a copy.
-  const { doc, close } = await openPdf(original.slice());
+  const { doc, close } = await openPdf(original.slice(), password);
   const out = await PDFDocument.create();
   out.setProducer(site.brandName);
   out.setCreator(SITE_URL);
@@ -65,7 +66,9 @@ export async function compressPdf(file: Blob, preset: CompressionPreset, onProgr
   }
 
   const bytes = await out.save();
-  if (bytes.length >= original.length) {
+  // Keep the original if compressing didn't help, unless it was password-protected:
+  // the visitor just unlocked it, so they get the (unlocked) compressed copy.
+  if (bytes.length >= original.length && !password) {
     return { blob: new Blob([original as BlobPart], { type: "application/pdf" }), pages: out.getPageCount(), alreadySmall: true };
   }
   return { blob: new Blob([bytes as BlobPart], { type: "application/pdf" }), pages: out.getPageCount(), alreadySmall: false };

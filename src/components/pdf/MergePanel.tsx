@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Icon } from "@/components/Icon";
 import { friendlyPdfError } from "@/lib/pdf/errors";
-import { formatBytes, isPdf } from "@/lib/pdf/format";
+import { formatBytes, onlyPdfs } from "@/lib/pdf/format";
 import { ErrorText } from "./CompressPanel";
 import { Dropzone } from "./Dropzone";
 import { Progress } from "./Progress";
@@ -16,6 +16,9 @@ interface Entry {
   pages: number | null;
   error?: string;
 }
+
+/** Ids for the file list (a counter: crypto.randomUUID() is missing on older iPhones). */
+let nextId = 0;
 
 /** Moves one entry of a list from index `from` to index `to`. */
 function move<T>(list: T[], from: number, to: number) {
@@ -45,10 +48,10 @@ export function MergePanel() {
   };
 
   const add = async (files: File[]) => {
-    const pdfs = files.filter(isPdf);
+    const pdfs = await onlyPdfs(files);
     setError(pdfs.length < files.length ? `Skipped ${files.length - pdfs.length} file(s) that are not PDFs.` : null);
     if (!pdfs.length) return;
-    const added = pdfs.map((file) => ({ id: crypto.randomUUID(), file, pages: null }));
+    const added = pdfs.map((file) => ({ id: String(++nextId), file, pages: null }));
     setEntries((cur) => [...cur, ...added]);
     clearResult();
     // Count pages in the background; pdf-lib is loaded only now.
