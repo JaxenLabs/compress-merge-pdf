@@ -287,7 +287,7 @@ console.log("Phone files and older browsers");
 
   // An older browser (or an in-app browser) without these newer features.
   const OLD = `try { delete Promise.withResolvers; delete Math.sumPrecise; delete Uint8Array.fromBase64; delete Uint8Array.prototype.toHex;
-    delete Uint8Array.prototype.toBase64; delete Response.prototype.bytes; delete Blob.prototype.bytes; delete AbortSignal.any; delete crypto.randomUUID; } catch {}`;
+    delete Uint8Array.prototype.toBase64; delete Response.prototype.bytes; delete Blob.prototype.bytes; delete AbortSignal.any; delete Crypto.prototype.randomUUID; } catch {}`;
   const old = await browser.newContext({ acceptDownloads: true });
   await old.addInitScript(OLD);
   // Workers don't run init scripts, so the same features are removed at the top of the PDF.js worker.
