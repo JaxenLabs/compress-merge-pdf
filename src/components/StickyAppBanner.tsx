@@ -6,7 +6,7 @@ import { site } from "@/content/site";
 import { Icon } from "./Icon";
 import { JaxScanIcon, PlayGlyph } from "./JaxScanPromo";
 
-/** Remembers a dismissal; one key per site, since all tools share the jaxenlabs.github.io origin. */
+/** Remembers a dismissal (kept per site). */
 const KEY = `jaxscan-banner-closed${site.basePath}`;
 
 /**

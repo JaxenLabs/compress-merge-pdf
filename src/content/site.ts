@@ -16,10 +16,10 @@ export const site = {
    * everywhere (footer, <head>, structured data); no company name or email is shown.
    */
   brandName: "Compress PDF by JaxScan",
-  /** Where the site is served from (no trailing slash). */
-  origin: "https://jaxenlabs.github.io",
-  /** The folder the site lives in on that origin: the repo name on GitHub Pages. */
-  basePath: "/compress-merge-pdf",
+  /** Where the site is served from (no trailing slash): its Cloudflare Pages address. */
+  origin: "https://compressmergepdf.pages.dev",
+  /** The folder the site lives in on that origin ("" = the root). */
+  basePath: "",
   /** Used in the JaxScan links so installs from this site can be counted. */
   utmSource: "web_compress_pdf",
   /** Shown as author and publisher. `url` is the JaxScan Play Store page; `logoPath` is inside this site. */

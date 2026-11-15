@@ -2,7 +2,7 @@
 
 Free PDF compressor and merger that runs **100% in the browser**: PDFs are never uploaded. Safe for bank statements, contracts and IDs.
 
-Live: **https://jaxenlabs.github.io/compress-merge-pdf/** (moving to compressmergepdf.com)
+Live: **https://compressmergepdf.pages.dev/** (moving to compressmergepdf.com)
 
 ## What it does
 

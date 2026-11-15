@@ -23,7 +23,7 @@ import { PDFDocument, StandardFonts } from "pdf-lib";
 import { chromium } from "playwright";
 
 const OUT = fileURLToPath(new URL("../out/", import.meta.url));
-const BASE = "/compress-merge-pdf";
+const BASE = "";
 const UTM = "utm_source%3Dweb_compress_pdf";
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".png": "image/png", ".ico": "image/x-icon", ".woff2": "font/woff2", ".txt": "text/plain", ".xml": "application/xml", ".wasm": "application/wasm", ".webmanifest": "application/manifest+json" };
 

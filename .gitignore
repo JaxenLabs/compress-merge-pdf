@@ -9,3 +9,6 @@ npm-debug.log*
 
 # Copied from node_modules by scripts/copy-pdfjs.mjs
 public/pdfjs/
+
+# Built by scripts/github-redirects.mjs in CI
+github-pages/
