@@ -2,12 +2,12 @@ import { headerCta, jaxscan } from "@/content/jaxscan";
 import { site } from "@/content/site";
 import { JaxScanIcon, PlayGlyph } from "./JaxScanPromo";
 
-/** Section links in the desktop header. */
+/** Section links in the desktop header: sections of the home page, so they work from every page. */
 const NAV = [
-  { href: "#how-to", label: "How it works" },
-  { href: "#levels", label: "Levels" },
-  { href: "#merge", label: "Merge" },
-  { href: "#faq", label: "FAQ" },
+  { href: `${site.basePath}/#how-to`, label: "How it works" },
+  { href: `${site.basePath}/#levels`, label: "Levels" },
+  { href: `${site.basePath}/#merge`, label: "Merge" },
+  { href: `${site.basePath}/#faq`, label: "FAQ" },
 ];
 
 /**
@@ -20,7 +20,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-30 pt-[env(safe-area-inset-top)] lg:px-6 lg:pt-4">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 border-b border-border bg-bg/85 px-4 backdrop-blur-xl lg:h-16 lg:rounded-2xl lg:border lg:bg-bg/70 lg:pr-2.5 lg:shadow-[0_8px_40px_-16px_var(--shadow)]">
-        <a href="#top" className="flex items-center gap-2.5">
+        <a href={`${site.basePath}/`} className="flex items-center gap-2.5">
           <JaxScanIcon size={36} eager className="size-9 rounded-xl" />
           <span className="font-display text-lg leading-none font-semibold tracking-tight">
             {site.name}

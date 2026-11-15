@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { CompressionPreset } from "@/lib/pdf/presets";
 import { CompressPanel } from "./CompressPanel";
 import { MergePanel } from "./MergePanel";
 
@@ -11,12 +12,21 @@ const TABS = [
 
 type Tab = (typeof TABS)[number]["id"];
 
+/** How a page opens the tool: which tab, which compression level and the size the visitor is aiming for. */
+export interface PdfToolSetup {
+  mode?: Tab;
+  preset?: CompressionPreset["id"];
+  /** Target size in KB; the compress result then says whether the file came in under it. */
+  targetKb?: number;
+}
+
 /**
  * The tool: two modes in one card, like an app's segmented tabs. Both panels
  * stay mounted, so switching tabs keeps each one's files and results.
+ * Landing pages open it set up for their job (`mode`, `preset`, `targetKb`).
  */
-export function PdfTool() {
-  const [tab, setTab] = useState<Tab>("compress");
+export function PdfTool({ mode = "compress", preset, targetKb }: PdfToolSetup) {
+  const [tab, setTab] = useState<Tab>(mode);
   return (
     <div className="card p-3 sm:p-5 lg:p-6">
       <div role="tablist" aria-label="Mode" className="segment mb-4 sm:mb-5">
@@ -36,7 +46,7 @@ export function PdfTool() {
         ))}
       </div>
       <div id="panel-compress" role="tabpanel" aria-labelledby="tab-compress" hidden={tab !== "compress"}>
-        <CompressPanel />
+        <CompressPanel initialPreset={preset} targetKb={targetKb} />
       </div>
       <div id="panel-merge" role="tabpanel" aria-labelledby="tab-merge" hidden={tab !== "merge"}>
         <MergePanel />

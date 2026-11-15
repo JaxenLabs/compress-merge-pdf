@@ -8,6 +8,8 @@
  *   text PDF that is already compact (the original is kept).
  * - Merge: three PDFs with different page sizes, reordered, merged in order.
  * - A broken file shows a clear message.
+ * - Landing pages: own title, canonical and structured data, the tool preset
+ *   for the page, real outputs, links, sitemap, _headers and IndexNow key.
  * It also fails if the page sends any request carrying data, if a request
  * goes to any server other than this site, if the browser logs an error, or
  * if the page shows anything but JaxScan (no JaxBudget, company name or email).
@@ -310,6 +312,77 @@ console.log("Phone files and older browsers");
   await p2.getByRole("link", { name: "Download PDF" }).or(p2.locator('p[role="alert"]')).first().waitFor({ timeout: 60_000 });
   check((await p2.getByRole("link", { name: "Download PDF" }).count()) === 1, "older browser: merge works");
   await old.close();
+}
+
+console.log("Landing pages");
+{
+  // slug → the tab, level and target the page must open with (src/content/landing.ts).
+  const LANDING = {
+    "compress-pdf": { mode: "compress", level: "Recommended" },
+    "merge-pdf": { mode: "merge" },
+    "compress-pdf-to-100kb": { mode: "compress", level: "Extreme compression", target: "100 KB" },
+    "compress-pdf-to-200kb": { mode: "compress", level: "Extreme compression", target: "200 KB" },
+    "compress-pdf-to-500kb": { mode: "compress", level: "Extreme compression", target: "500 KB" },
+    "compress-pdf-to-1mb": { mode: "compress", level: "Recommended", target: "1 MB" },
+    "reduce-pdf-size": { mode: "compress", level: "Recommended" },
+    "combine-pdf": { mode: "merge" },
+  };
+  const titles = new Set();
+  for (const [slug, want] of Object.entries(LANDING)) {
+    await page.goto(`${origin}${BASE}/${slug}/`);
+    const title = await page.title();
+    const canonical = await page.locator('link[rel="canonical"]').getAttribute("href");
+    const description = await page.locator('meta[name="description"]').getAttribute("content");
+    const ogImage = await page.locator('meta[property="og:image"]').count();
+    titles.add(title);
+    const h1 = (await page.locator("h1").textContent()).toLowerCase();
+    check(
+      title.length <= 60 && description.length <= 160 && canonical === `https://compressmergepdf.pages.dev/${slug}/` && h1.startsWith(slug.split("-").slice(0, 2).join(" ")) && ogImage > 0,
+      `/${slug}/: "${title}", canonical, description, H1, share image`,
+    );
+    const types = await page.locator('script[type="application/ld+json"]').evaluateAll((s) => s.flatMap((x) => JSON.parse(x.textContent)["@graph"].map((n) => n["@type"])));
+    check(["WebApplication", "FAQPage", "HowTo", "BreadcrumbList"].every((t) => types.includes(t)), `/${slug}/: structured data`);
+    check((await page.getByRole("tab", { name: want.mode === "merge" ? "Merge PDFs" : "Compress PDF" }).getAttribute("aria-selected")) === "true", `/${slug}/: opens on ${want.mode}`);
+    if (want.level) {
+      await page.locator("#panel-compress input[type=file]").setInputFiles(pdf("note.pdf", await textPdf()));
+      const pressed = await page.locator("#panel-compress button[aria-pressed=true]").textContent();
+      const legend = await page.locator("#panel-compress legend").textContent();
+      check(pressed.startsWith(want.level) && (!want.target || legend.includes(`under ${want.target}`)), `/${slug}/: ${want.level}${want.target ? `, aiming for under ${want.target}` : ""} preset`);
+    }
+    const related = await page.locator("#related a").evaluateAll((as) => as.map((a) => new URL(a.href).pathname));
+    check(related.length === Object.keys(LANDING).length && related.includes(`${BASE}/`) && !related.includes(`${BASE}/${slug}/`), `/${slug}/: links to home and the other pages`);
+  }
+  check(titles.size === Object.keys(LANDING).length, "every landing page has its own title");
+
+  await page.goto(`${origin}${BASE}/`);
+  const homeLinks = await page.locator("#popular a").evaluateAll((as) => as.map((a) => new URL(a.href).pathname));
+  check(Object.keys(LANDING).every((s) => homeLinks.includes(`${BASE}/${s}/`)), "home page links to every landing page");
+
+  // Real outputs from landing pages: the target note must agree with the real size.
+  for (const [slug, limit, label] of [
+    ["compress-pdf-to-100kb", 100 * 1024, "100 KB"],
+    ["compress-pdf-to-1mb", 1024 * 1024, "1 MB"],
+  ]) {
+    await page.goto(`${origin}${BASE}/${slug}/`);
+    await page.locator("#panel-compress input[type=file]").setInputFiles(scan);
+    await page.getByRole("button", { name: "Compress PDF", exact: true }).click();
+    const r = await downloadResult();
+    const under = r.bytes.length <= limit;
+    const note = await page.getByText(under ? `Under ${label}: ready to upload.` : `Still above ${label}.`, { exact: false }).isVisible();
+    check(r.doc.getPageCount() === 3 && r.bytes.length < scan.buffer.length && note, `/${slug}/: ${Math.round(r.bytes.length / 1024)} KB, says "${under ? "under" : "still above"} ${label}"`);
+  }
+  await page.goto(`${origin}${BASE}/combine-pdf/`);
+  await page.locator("#panel-merge input[type=file]").setInputFiles([pdf("form.pdf", await sizedPdf(1, 200)), pdf("id.pdf", await sizedPdf(2, 300))]);
+  await page.getByRole("button", { name: "Merge 2 PDFs" }).click();
+  const merged = await downloadResult();
+  check(merged.doc.getPages().map((p) => p.getSize().width).join(",") === "200,300,300", "/combine-pdf/: merges straight away");
+
+  const sitemap = await readFile(join(OUT, "sitemap.xml"), "utf8");
+  check(Object.keys(LANDING).every((s) => sitemap.includes(`<loc>https://compressmergepdf.pages.dev/${s}/</loc>`)), "sitemap lists every landing page");
+  const headers = await readFile(join(OUT, "_headers"), "utf8").catch(() => "");
+  check(headers.includes("/_next/static/*"), "out/_headers (cache headers) is published");
+  const key = await readFile(join(OUT, "f0ae41e7f35ca7eb86aa215577b85cfe.txt"), "utf8").catch(() => "");
+  check(key === "f0ae41e7f35ca7eb86aa215577b85cfe", "IndexNow key file is published");
 }
 
 console.log("JaxScan only");

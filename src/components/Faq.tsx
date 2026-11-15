@@ -4,12 +4,12 @@ import { Icon } from "./Icon";
 /**
  * FAQ accordion built on <details>, so it works without JavaScript and the
  * answers are in the HTML for search engines. The same questions feed the
- * FAQPage structured data (src/lib/seo.ts).
+ * FAQPage structured data (src/lib/seo.ts). Landing pages pass their own `items`.
  */
-export function Faq() {
+export function Faq({ items = faq }: { items?: { q: string; a: string }[] }) {
   return (
     <div className="divide-y divide-border overflow-hidden rounded-3xl border border-border bg-surface">
-      {faq.map((f, i) => (
+      {items.map((f, i) => (
         <details key={f.q} open={i === 0} className="group">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-semibold sm:px-6 sm:py-5">
             <h3 className="text-base">{f.q}</h3>

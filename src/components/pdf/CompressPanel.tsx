@@ -17,14 +17,30 @@ interface Result {
   preset: CompressionPreset["id"];
 }
 
+/** "100 KB", "1 MB". */
+const sizeLabel = (kb: number) => (kb >= 1024 ? `${kb / 1024} MB` : `${kb} KB`);
+
+/**
+ * What the result says about a target size. There is no exact-size mode, so
+ * the levels do the work and this tells the visitor whether the file fits,
+ * and what to try next when it doesn't.
+ */
+function targetNote(size: number, targetKb: number, preset: CompressionPreset["id"]) {
+  const limit = sizeLabel(targetKb);
+  if (size <= targetKb * 1024) return `Under ${limit}: ready to upload.`;
+  if (preset !== "extreme") return `Still above ${limit}. Choose Extreme compression and compress again for a smaller file.`;
+  return `Still above ${limit}. This is as small as Extreme compression makes this PDF; upload fewer pages per file, or rescan it in black and white.`;
+}
+
 /**
  * Compress mode: one PDF, a compression level, a progress bar and the
  * before/after result. A password-protected PDF asks for its password and
- * is compressed into an unlocked copy.
+ * is compressed into an unlocked copy. Landing pages choose the starting
+ * level (`initialPreset`) and a size to aim for (`targetKb`).
  */
-export function CompressPanel() {
+export function CompressPanel({ initialPreset = DEFAULT_PRESET, targetKb }: { initialPreset?: CompressionPreset["id"]; targetKb?: number }) {
   const [file, setFile] = useState<File | null>(null);
-  const [presetId, setPresetId] = useState<CompressionPreset["id"]>(DEFAULT_PRESET);
+  const [presetId, setPresetId] = useState<CompressionPreset["id"]>(initialPreset);
   const [progress, setProgress] = useState<{ page: number; total: number } | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +92,10 @@ export function CompressPanel() {
   if (!file) {
     return (
       <>
-        <Dropzone multiple={false} title="Choose a PDF to compress" hint="Drop it here or tap to pick it. Bank statements, contracts, IDs, scans: all stay on your device." onFiles={pick} />
+        <Dropzone
+          multiple={false}
+          title={targetKb ? `Choose a PDF to compress to ${sizeLabel(targetKb)}` : "Choose a PDF to compress"}
+          hint="Drop it here or tap to pick it. Bank statements, contracts, IDs, scans: all stay on your device." onFiles={pick} />
         {error && <ErrorText text={error} />}
       </>
     );
@@ -130,7 +149,9 @@ export function CompressPanel() {
       )}
 
       <fieldset disabled={busy}>
-        <legend className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">Compression level</legend>
+        <legend className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">
+          Compression level{targetKb ? ` · aiming for under ${sizeLabel(targetKb)}` : ""}
+        </legend>
         <div className="grid gap-2 sm:grid-cols-3">
           {PRESETS.map((p) => (
             <button
@@ -177,7 +198,14 @@ export function CompressPanel() {
         <ResultBox
           headline={result.alreadySmall ? `${formatBytes(result.size)}: already compact` : `${formatBytes(file.size)} → ${formatBytes(result.size)} (${percentChange(file.size, result.size)})`}
           details={`${result.pages} page${result.pages > 1 ? "s" : ""} · ${PRESETS.find((p) => p.id === result.preset)!.label} · made on your device`}
-          note={result.alreadySmall ? "This PDF is already well compressed, so your original file is kept. Try Extreme compression for a smaller file." : undefined}
+          note={
+            [
+              result.alreadySmall && "This PDF is already well compressed, so your original file is kept. Try Extreme compression for a smaller file.",
+              targetKb && targetNote(result.size, targetKb, result.preset),
+            ]
+              .filter(Boolean)
+              .join(" ") || undefined
+          }
           href={result.url}
           fileName={outputName(file.name, "compressed")}
         />

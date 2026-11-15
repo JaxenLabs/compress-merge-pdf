@@ -1,21 +1,16 @@
 import { Faq } from "@/components/Faq";
-import { Icon, type IconName } from "@/components/Icon";
+import { Icon } from "@/components/Icon";
 import { JaxScanShowcase } from "@/components/JaxScanPromo";
 import { JsonLd } from "@/components/JsonLd";
-import { PdfTool } from "@/components/pdf/PdfTool";
-import { faqTitle, hero, howToTitle, levels, mergeSteps, mergeTitle, privacyBadge, steps, whyPrivate } from "@/content/page";
-import { pageJsonLd } from "@/lib/seo";
-
-const HIGHLIGHTS: { icon: IconName; text: string }[] = [
-  { icon: "shield", text: "No upload" },
-  { icon: "bolt", text: "Fast" },
-  { icon: "wifiOff", text: "Works offline" },
-  { icon: "check", text: "No watermark" },
-];
+import { LinkGrid, SectionTitle, Steps, ToolHero } from "@/components/Sections";
+import { LANDING_PAGES, popularTools } from "@/content/landing";
+import { faqTitle, hero, howToTitle, levels, mergeSteps, mergeTitle, steps, whyPrivate } from "@/content/page";
+import { landingPath, pageJsonLd } from "@/lib/seo";
 
 /**
- * The whole site is this one page: the PDF tool at the top (above the fold),
- * then the explanations search engines and visitors read below it.
+ * The home page: the PDF tool at the top (above the fold), then the
+ * explanations search engines and visitors read below it, and links to the
+ * landing pages (src/content/landing.ts).
  */
 export default function Home() {
   return (
@@ -23,34 +18,7 @@ export default function Home() {
       <JsonLd data={pageJsonLd()} />
 
       {/* Tool first: heading, privacy badge, tool */}
-      <section id="top" className="mx-auto max-w-5xl px-4 pt-4 lg:px-6 lg:pt-10">
-        <div className="text-center">
-          <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-tight sm:text-4xl lg:text-5xl">
-            {hero.h1}{" "}
-            <span className="block text-gradient sm:inline">
-              {/* The dash only joins the two parts when they share a line. */}
-              <span className="hidden sm:inline">– </span>
-              {hero.h1Sub}
-            </span>
-          </h1>
-          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted sm:text-base">{hero.intro}</p>
-          <p className="mx-auto mt-4 inline-flex max-w-full items-center gap-2 rounded-full border border-accent/40 bg-accent-soft px-4 py-2 text-left text-xs font-semibold text-accent sm:text-sm">
-            <Icon name="shield" className="size-4 shrink-0" />
-            {privacyBadge}
-          </p>
-        </div>
-        <div className="mt-5">
-          <PdfTool />
-        </div>
-        <ul className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-muted sm:text-sm">
-          {HIGHLIGHTS.map((h) => (
-            <li key={h.text} className="flex items-center gap-1.5">
-              <Icon name={h.icon} className="size-4 text-accent" />
-              {h.text}
-            </li>
-          ))}
-        </ul>
-      </section>
+      <ToolHero h1={hero.h1} h1Sub={hero.h1Sub} intro={hero.intro} />
 
       <div className="mx-auto max-w-5xl space-y-16 px-4 pt-16 lg:space-y-24 lg:px-6 lg:pt-24">
         {/* How to compress */}
@@ -111,6 +79,12 @@ export default function Home() {
         {/* JaxScan, our Android app */}
         <JaxScanShowcase />
 
+        {/* Links to every landing page (compress to a size, merge, combine) */}
+        <section id="popular" aria-labelledby="popular-title">
+          <SectionTitle id="popular-title" eyebrow={popularTools.eyebrow} title={popularTools.title} />
+          <LinkGrid links={LANDING_PAGES.map((p) => ({ href: landingPath(p), text: p.linkText, blurb: p.blurb }))} />
+        </section>
+
         {/* FAQ */}
         <section id="faq" aria-labelledby="faq-title">
           <SectionTitle id="faq-title" eyebrow="FAQ" title={faqTitle} />
@@ -120,30 +94,5 @@ export default function Home() {
         </section>
       </div>
     </>
-  );
-}
-
-function SectionTitle({ id, eyebrow, title }: { id: string; eyebrow: string; title: string }) {
-  return (
-    <div className="max-w-3xl">
-      <p className="text-xs font-semibold tracking-wide text-accent uppercase">{eyebrow}</p>
-      <h2 id={id} className="mt-2 font-display text-2xl font-semibold tracking-tight sm:text-3xl">
-        {title}
-      </h2>
-    </div>
-  );
-}
-
-function Steps({ items, columns = "lg:grid-cols-4" }: { items: { title: string; text: string }[]; columns?: string }) {
-  return (
-    <ol className={`mt-8 grid gap-3 sm:grid-cols-2 ${columns}`}>
-      {items.map((s, i) => (
-        <li key={s.title} className="card p-5">
-          <span className="grid size-9 place-items-center rounded-xl bg-accent-soft font-display font-bold text-accent">{i + 1}</span>
-          <h3 className="mt-3 font-semibold">{s.title}</h3>
-          <p className="mt-1.5 text-sm leading-relaxed text-muted">{s.text}</p>
-        </li>
-      ))}
-    </ol>
   );
 }
