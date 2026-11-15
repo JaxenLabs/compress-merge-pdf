@@ -358,17 +358,27 @@ console.log("Landing pages");
   const homeLinks = await page.locator("#popular a").evaluateAll((as) => as.map((a) => new URL(a.href).pathname));
   check(Object.keys(LANDING).every((s) => homeLinks.includes(`${BASE}/${s}/`)), "home page links to every landing page");
 
+  // The target rule: 1 KB = 1000 bytes, so a file passes portals whichever way they count.
+  {
+    const { fitsTarget, sizeLabel, targetNote } = await import("../src/lib/pdf/target.ts");
+    check(fitsTarget(100_000, 100) && !fitsTarget(100_001, 100) && !fitsTarget(102_400, 100), "100 KB target means at most 100,000 bytes (102,400 is over)");
+    check(fitsTarget(1_000_000, 1000) && !fitsTarget(1_000_001, 1000) && sizeLabel(1000) === "1 MB" && sizeLabel(200) === "200 KB", "1 MB target means at most 1,000,000 bytes");
+    check(targetNote(101_000, 100, "extreme").startsWith("Still above 100 KB (100,000 bytes)."), "a file shown as 98.6 KB is still above a 100 KB target, with the limit in bytes");
+    check(targetNote(99_000, 100, "extreme") === "Under 100 KB: ready to upload.", "99,000 bytes is under 100 KB");
+    check(/Choose Extreme compression/.test(targetNote(1_000_500, 1000, "recommended")), "over target on Recommended suggests Extreme");
+  }
+
   // Real outputs from landing pages: the target note must agree with the real size.
   for (const [slug, limit, label] of [
-    ["compress-pdf-to-100kb", 100 * 1024, "100 KB"],
-    ["compress-pdf-to-1mb", 1024 * 1024, "1 MB"],
+    ["compress-pdf-to-100kb", 100 * 1000, "100 KB"],
+    ["compress-pdf-to-1mb", 1000 * 1000, "1 MB"],
   ]) {
     await page.goto(`${origin}${BASE}/${slug}/`);
     await page.locator("#panel-compress input[type=file]").setInputFiles(scan);
     await page.getByRole("button", { name: "Compress PDF", exact: true }).click();
     const r = await downloadResult();
     const under = r.bytes.length <= limit;
-    const note = await page.getByText(under ? `Under ${label}: ready to upload.` : `Still above ${label}.`, { exact: false }).isVisible();
+    const note = await page.getByText(under ? `Under ${label}: ready to upload.` : `Still above ${label} (${limit.toLocaleString("en-US")} bytes).`, { exact: false }).isVisible();
     check(r.doc.getPageCount() === 3 && r.bytes.length < scan.buffer.length && note, `/${slug}/: ${Math.round(r.bytes.length / 1024)} KB, says "${under ? "under" : "still above"} ${label}"`);
   }
   await page.goto(`${origin}${BASE}/combine-pdf/`);

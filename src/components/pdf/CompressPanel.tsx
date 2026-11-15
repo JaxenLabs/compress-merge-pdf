@@ -5,6 +5,7 @@ import { Icon } from "@/components/Icon";
 import { friendlyPdfError } from "@/lib/pdf/errors";
 import { formatBytes, onlyPdfs, outputName, percentChange } from "@/lib/pdf/format";
 import { DEFAULT_PRESET, PRESETS, type CompressionPreset } from "@/lib/pdf/presets";
+import { sizeLabel, targetNote } from "@/lib/pdf/target";
 import { Dropzone } from "./Dropzone";
 import { Progress } from "./Progress";
 import { ResultBox } from "./ResultBox";
@@ -15,21 +16,6 @@ interface Result {
   pages: number;
   alreadySmall: boolean;
   preset: CompressionPreset["id"];
-}
-
-/** "100 KB", "1 MB". */
-const sizeLabel = (kb: number) => (kb >= 1024 ? `${kb / 1024} MB` : `${kb} KB`);
-
-/**
- * What the result says about a target size. There is no exact-size mode, so
- * the levels do the work and this tells the visitor whether the file fits,
- * and what to try next when it doesn't.
- */
-function targetNote(size: number, targetKb: number, preset: CompressionPreset["id"]) {
-  const limit = sizeLabel(targetKb);
-  if (size <= targetKb * 1024) return `Under ${limit}: ready to upload.`;
-  if (preset !== "extreme") return `Still above ${limit}. Choose Extreme compression and compress again for a smaller file.`;
-  return `Still above ${limit}. This is as small as Extreme compression makes this PDF; upload fewer pages per file, or rescan it in black and white.`;
 }
 
 /**

@@ -18,7 +18,11 @@ export interface LandingPage {
   mode: "compress" | "merge";
   /** Compression level chosen when the page opens (compress pages). */
   preset?: CompressionPreset["id"];
-  /** Size the visitor is aiming for, in KB (1 KB = 1024 bytes, as phones and Windows show it). */
+  /**
+   * Size the visitor is aiming for, in KB. The check counts 1 KB as 1000 bytes
+   * (100 KB = 100,000 bytes; 1 MB = 1000 KB), so the file passes portals
+   * whichever way they count.
+   */
   targetKb?: number;
   /** <title>: starts with the search phrase, at most 60 characters. */
   title: string;
@@ -153,6 +157,10 @@ export const LANDING_PAGES: LandingPage[] = [
         q: "Will the text still be readable at 100 KB?",
         a: "Extreme keeps normal printed text readable on screen, but very small print and photos become soft. Check the downloaded file before you submit it.",
       },
+      {
+        q: "Why does it say “still above 100 KB” when the size shows 98 KB?",
+        a: "Portals count KB in two ways: 1000 or 1024 bytes. To be safe, the result only says it is under 100 KB at 100,000 bytes or less, so it passes either way. The size shown counts 1 KB as 1024 bytes, as Windows and phones do.",
+      },
       privacyQ,
     ],
   },
@@ -224,7 +232,7 @@ export const LANDING_PAGES: LandingPage[] = [
     slug: "compress-pdf-to-1mb",
     mode: "compress",
     preset: "recommended",
-    targetKb: 1024,
+    targetKb: 1000,
     title: "Compress PDF to 1 MB – Reduce PDF Size Free, No Upload",
     description: "Compress a PDF towards 1 MB with clear, readable pages. Recommended is preset and the result shows whether it fits. Free, private, in your browser.",
     h1: "Compress PDF to 1 MB",
@@ -247,7 +255,7 @@ export const LANDING_PAGES: LandingPage[] = [
       },
       {
         q: "Is 1 MB the same as 1000 KB?",
-        a: "Here 1 MB means 1024 KB, as Windows and phones count it. If a form says 1000 KB, aim for a result a little under 1 MB.",
+        a: "For the check, yes: the result only says it is under 1 MB when the file is at most 1,000,000 bytes, the stricter way portals count, so it passes whether the form means 1000 KB or 1024 KB. The size shown counts 1 KB as 1024 bytes, as Windows and phones do, so a file shown as 0.97 MB can still be just over.",
       },
       privacyQ,
     ],
